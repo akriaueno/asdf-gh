@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-# TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for gh.
 GH_REPO="https://github.com/cli/cli"
 TOOL_NAME="gh"
 TOOL_TEST="gh --help"
@@ -31,9 +30,43 @@ list_github_tags() {
 }
 
 list_all_versions() {
-	# TODO: Adapt this. By default we simply list the tag names from GitHub releases.
-	# Change this function if gh has other means of determining installable versions.
 	list_github_tags
+}
+
+get_download_url() {
+	local version="$1"
+	local os
+	local arch
+	local ext
+
+	case "$(uname -s)" in
+	Darwin)
+		os="macOS"
+		ext="zip"
+		;;
+	Linux)
+		os="linux"
+		ext="tar.gz"
+		;;
+	*)
+		fail "Unsupported OS: $(uname -s)"
+		;;
+	esac
+
+	case "$(uname -m)" in
+	x86_64)
+		arch="amd64"
+		;;
+	aarch64)
+		arch="arm64"
+		;;
+	arm64)
+		arch="arm64"
+		;;
+	*) fail "Unsupported architecture: $(uname -m)" ;;
+	esac
+
+	echo "$GH_REPO/releases/download/v${version}/gh_${version}_${os}_${arch}.${ext}"
 }
 
 download_release() {
@@ -41,17 +74,17 @@ download_release() {
 	version="$1"
 	filename="$2"
 
-	# TODO: Adapt the release URL convention for gh
-	url="$GH_REPO/archive/v${version}.tar.gz"
+	url=$(get_download_url "$version")
 
 	echo "* Downloading $TOOL_NAME release $version..."
-	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
+	curl "${curl_opts[@]}" -o "$filename" "$url" || fail "Could not download $url"
 }
 
 install_version() {
 	local install_type="$1"
 	local version="$2"
-	local install_path="${3%/bin}/bin"
+	local install_path="$3"
+	local bin_path="${install_path}/bin"
 
 	if [ "$install_type" != "version" ]; then
 		fail "asdf-$TOOL_NAME supports release installs only"
@@ -59,12 +92,16 @@ install_version() {
 
 	(
 		mkdir -p "$install_path"
+
 		cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
 
-		# TODO: Assert gh executable exists.
+		if [ ! -f "$bin_path/$TOOL_NAME" ]; then
+			fail "$TOOL_NAME executable not found in $bin_path"
+		fi
+
 		local tool_cmd
 		tool_cmd="$(echo "$TOOL_TEST" | cut -d' ' -f1)"
-		test -x "$install_path/$tool_cmd" || fail "Expected $install_path/$tool_cmd to be executable."
+		test -x "$bin_path/$tool_cmd" || fail "Expected $bin_path/$tool_cmd to be executable."
 
 		echo "$TOOL_NAME $version installation was successful!"
 	) || (

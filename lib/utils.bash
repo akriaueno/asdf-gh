@@ -41,6 +41,7 @@ download_release() {
 	url="$GH_REPO/archive/v${version}.tar.gz"
 
 	echo "* Downloading $TOOL_NAME release $version..."
+	echo "Debug: 🐛test🐛"
 	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
 }
 
@@ -66,6 +67,12 @@ install_version() {
 		test -x "$install_path/$tool_cmd" || fail "Expected $install_path/$tool_cmd to be executable."
 
 		echo "$TOOL_NAME $version installation was successful!"
+
+		echo "Debugging: Contents of ASDF_DOWNLOAD_PATH:"
+		ls -la "$ASDF_DOWNLOAD_PATH"
+
+		echo "Debugging: Contents of install_path:"
+		ls -la "$install_path"
 	) || (
 		rm -rf "$install_path"
 		fail "An error occurred while installing $TOOL_NAME $version."

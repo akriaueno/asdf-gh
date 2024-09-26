@@ -40,30 +40,30 @@ get_download_url() {
 	local ext
 
 	case "$(uname -s)" in
-		Darwin)
-			os="macOS"
-			ext="zip"
-			;;
-		Linux)
-			os="linux"
-			ext="tar.gz"
-			;;
-		*)
-			fail "Unsupported OS: $(uname -s)"
-			;;
+	Darwin)
+		os="macOS"
+		ext="zip"
+		;;
+	Linux)
+		os="linux"
+		ext="tar.gz"
+		;;
+	*)
+		fail "Unsupported OS: $(uname -s)"
+		;;
 	esac
 
 	case "$(uname -m)" in
-		x86_64)
-			arch="amd64"
-			;;
-		aarch64)
-			arch="arm64"
-			;;
-		arm64)
-			arch="arm64"
-			;;
-		*)       fail "Unsupported architecture: $(uname -m)" ;;
+	x86_64)
+		arch="amd64"
+		;;
+	aarch64)
+		arch="arm64"
+		;;
+	arm64)
+		arch="arm64"
+		;;
+	*) fail "Unsupported architecture: $(uname -m)" ;;
 	esac
 
 	echo "$GH_REPO/releases/download/v${version}/gh_${version}_${os}_${arch}.${ext}"

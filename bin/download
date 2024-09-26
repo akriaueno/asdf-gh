@@ -20,12 +20,12 @@ temp_dir=$(mktemp -d)
 
 # Extract the archive file
 if [[ "$release_file" == *.tar.gz ]]; then
-    tar -xzf "$release_file" -C "$temp_dir"
+	tar -xzf "$release_file" -C "$temp_dir"
 elif [[ "$release_file" == *.zip ]]; then
-    unzip -q "$release_file" -d "$temp_dir"
+	unzip -q "$release_file" -d "$temp_dir"
 else
-    rm -rf "$temp_dir"
-    fail "Unsupported file format: ${release_file##*.}"
+	rm -rf "$temp_dir"
+	fail "Unsupported file format: ${release_file##*.}"
 fi
 
 extracted_dir=$(find "$temp_dir" -mindepth 1 -maxdepth 1 -type d)

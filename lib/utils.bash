@@ -33,21 +33,58 @@ list_all_versions() {
 	list_github_tags
 }
 
+get_download_url() {
+	local version="$1"
+	local os
+	local arch
+	local ext
+
+	case "$(uname -s)" in
+		Darwin)
+			os="macOS"
+			ext="zip"
+			;;
+		Linux)
+			os="linux"
+			ext="tar.gz"
+			;;
+		*)
+			fail "Unsupported OS: $(uname -s)"
+			;;
+	esac
+
+	case "$(uname -m)" in
+		x86_64)
+			arch="amd64"
+			;;
+		aarch64)
+			arch="arm64"
+			;;
+		arm64)
+			arch="arm64"
+			;;
+		*)       fail "Unsupported architecture: $(uname -m)" ;;
+	esac
+
+	echo "$GH_REPO/releases/download/v${version}/gh_${version}_${os}_${arch}.${ext}"
+}
+
 download_release() {
 	local version filename url
 	version="$1"
 	filename="$2"
 
-	url="$GH_REPO/archive/v${version}.tar.gz"
+	url=$(get_download_url "$version")
 
 	echo "* Downloading $TOOL_NAME release $version..."
-	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
+	curl "${curl_opts[@]}" -o "$filename" "$url" || fail "Could not download $url"
 }
 
 install_version() {
 	local install_type="$1"
 	local version="$2"
-	local install_path="${3%/bin}/bin"
+	local install_path="$3"
+	local bin_path="${install_path}/bin"
 
 	if [ "$install_type" != "version" ]; then
 		fail "asdf-$TOOL_NAME supports release installs only"
@@ -55,23 +92,18 @@ install_version() {
 
 	(
 		mkdir -p "$install_path"
+
 		cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
 
-		if [ ! -f "$install_path/$TOOL_NAME" ]; then
-			fail "$TOOL_NAME executable not found in $install_path"
+		if [ ! -f "$bin_path/$TOOL_NAME" ]; then
+			fail "$TOOL_NAME executable not found in $bin_path"
 		fi
 
 		local tool_cmd
 		tool_cmd="$(echo "$TOOL_TEST" | cut -d' ' -f1)"
-		test -x "$install_path/$tool_cmd" || fail "Expected $install_path/$tool_cmd to be executable."
+		test -x "$bin_path/$tool_cmd" || fail "Expected $bin_path/$tool_cmd to be executable."
 
 		echo "$TOOL_NAME $version installation was successful!"
-
-		echo "Debugging: Contents of ASDF_DOWNLOAD_PATH:"
-		ls -la "$ASDF_DOWNLOAD_PATH"
-
-		echo "Debugging: Contents of install_path:"
-		ls -la "$install_path"
 	) || (
 		rm -rf "$install_path"
 		fail "An error occurred while installing $TOOL_NAME $version."
